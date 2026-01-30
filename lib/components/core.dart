@@ -2,7 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 // import 'dart:math'; // For random if needed
 import '../data/game_state.dart';
-import '../data/item_effect.dart';
+import '../data/effects/item_effect.dart';
 import '../systems/audio_manager.dart';
 import 'ball.dart';
 import 'block.dart';
@@ -66,25 +66,26 @@ class Core extends PositionComponent with HasGameReference {
     // Check GameState for ammo
     final state = GameState();
     if (state.consumeBall()) {
-      // Find nearest enemy
+      // Find nearest enemy (最適化版)
       Vector2 targetDir = Vector2(0, -1); // Default UP
 
-      final enemies = game.children.whereType<BlockEnemy>();
-      if (enemies.isNotEmpty) {
-        BlockEnemy? closest;
-        double minDst = double.infinity;
+      // 高速化: 全敵検索ではなく、ある程度近い敵を見つけたら終了
+      BlockEnemy? closest;
+      double minDst = double.infinity;
+      const double goodEnoughDist = 10000; // 100pxの2乗 - この距離以内なら即採用
 
-        for (final e in enemies) {
-          final dst = e.position.distanceToSquared(position);
-          if (dst < minDst) {
-            minDst = dst;
-            closest = e;
-          }
+      for (final child in game.children) {
+        if (child is! BlockEnemy) continue;
+        final dst = child.position.distanceToSquared(position);
+        if (dst < minDst) {
+          minDst = dst;
+          closest = child;
+          if (dst < goodEnoughDist) break; // 十分近ければ終了
         }
+      }
 
-        if (closest != null) {
-          targetDir = (closest.position - position).normalized();
-        }
+      if (closest != null) {
+        targetDir = (closest.position - position).normalized();
       } else {
         // Random if no enemies
         final r = DateTime.now().millisecondsSinceEpoch % 100 / 100;
@@ -94,6 +95,10 @@ class Core extends PositionComponent with HasGameReference {
 
       // Cycle loadout
       if (state.ballLoadout.isEmpty) return; // Should not happen given init
+      // リセット時のインデックス範囲外を防ぐ
+      if (currentLoadoutIndex >= state.ballLoadout.length) {
+        currentLoadoutIndex = 0;
+      }
       final item = state.ballLoadout[currentLoadoutIndex];
       currentLoadoutIndex =
           (currentLoadoutIndex + 1) % state.ballLoadout.length;

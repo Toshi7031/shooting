@@ -1,6 +1,6 @@
 import 'rarity.dart';
 import 'tags.dart';
-import 'item_effect.dart';
+import '../effects/item_effect.dart';
 
 class BaseStats {
   final double damage;

@@ -7,6 +7,9 @@ import 'ui/game_over_menu.dart';
 import 'ui/start_screen.dart';
 import 'systems/audio_manager.dart';
 
+// グローバルにアクセス可能なゲームインスタンス
+final BreakoutGame gameInstance = BreakoutGame();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AudioManager().init(); // Optional preload
@@ -18,7 +21,7 @@ void main() async {
         body: Stack(
           children: [
             GameWidget(
-              game: BreakoutGame(),
+              game: gameInstance,
             ),
             const GameHud(),
             const BottomControls(),

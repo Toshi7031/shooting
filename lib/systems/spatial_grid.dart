@@ -8,8 +8,13 @@ class SpatialGrid {
   SpatialGrid({this.cellSize = 64.0});
 
   void clear() {
+    // リストの中身だけクリアし、リストオブジェクト自体は再利用
     for (final list in _cells.values) {
       list.clear();
+    }
+    // 古いセルが蓄積する場合のために、十分な数がたまったらマップ自体もクリア
+    if (_cells.length > 100) {
+      _cells.clear();
     }
   }
 
@@ -44,23 +49,30 @@ class SpatialGrid {
     }
   }
 
+  // クエリ結果用のキャッシュ（GC削減）
+  final Set<BlockEnemy> _queryResultSet = {};
+  final List<BlockEnemy> _queryResultList = [];
+
   List<BlockEnemy> query(Rect rect) {
     final startX = (rect.left / cellSize).floor();
     final endX = (rect.right / cellSize).floor();
     final startY = (rect.top / cellSize).floor();
     final endY = (rect.bottom / cellSize).floor();
 
-    final Set<BlockEnemy> result = {};
+    _queryResultSet.clear();
 
     for (int x = startX; x <= endX; x++) {
       for (int y = startY; y <= endY; y++) {
         final key = _hash(x, y);
         final cell = _cells[key];
         if (cell != null) {
-          result.addAll(cell);
+          _queryResultSet.addAll(cell);
         }
       }
     }
-    return result.toList();
+
+    _queryResultList.clear();
+    _queryResultList.addAll(_queryResultSet);
+    return _queryResultList;
   }
 }

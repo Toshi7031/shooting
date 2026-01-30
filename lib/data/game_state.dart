@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'item_data.dart';
-import 'item_repository.dart';
-import 'items/artifact_data.dart';
+import 'models/item_data.dart';
+import 'repositories/item_repository.dart';
+import 'models/artifact_data.dart';
 
 class GameState extends ChangeNotifier {
   static final GameState _instance = GameState._internal();
@@ -95,6 +95,11 @@ class GameState extends ChangeNotifier {
 
   /// スロットに空きがあるか
   bool get hasEmptyArtifactSlot => equippedArtifacts.length < maxArtifactSlots;
+
+  /// 指定したアーティファクトを既に持っているか
+  bool hasArtifact(ArtifactData artifact) {
+    return equippedArtifacts.any((a) => a.name == artifact.name);
+  }
 
   void addGold(int amount) {
     gold += amount;
@@ -195,7 +200,8 @@ class GameState extends ChangeNotifier {
     ];
     availableBalls = 3;
     availableBalls = 3;
-    enemiesToSpawn = 100;
+    // 初期敵数
+    enemiesToSpawn = 50;
     enemiesAlive = 0;
     notifyListeners();
   }
@@ -208,7 +214,7 @@ class GameState extends ChangeNotifier {
       enemiesToSpawn = 1; // Only 1 Boss
     } else {
       isBossWave = false;
-      enemiesToSpawn = 100 + (currentWave * 20); // Massive swarm
+      enemiesToSpawn = 50 + (currentWave * 10); // Waveごとに+10体
     }
 
     notifyListeners();
@@ -230,13 +236,13 @@ class GameState extends ChangeNotifier {
 
   void returnBall() {
     availableBalls++;
-    notifyListeners();
+    // notifyListenersは高頻度なのでスキップ
   }
 
   bool consumeBall() {
     if (availableBalls > 0) {
       availableBalls--;
-      notifyListeners();
+      // notifyListenersは高頻度なのでスキップ
       return true;
     }
     return false;

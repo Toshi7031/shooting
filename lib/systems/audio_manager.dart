@@ -7,53 +7,117 @@ class AudioManager {
 
   bool _initialized = false;
 
+  // AudioPool（プリロード済みプレーヤーを再利用してGC圧力を回避）
+  AudioPool? _shootPool;
+  AudioPool? _hitPool;
+  AudioPool? _explosionPool;
+  AudioPool? _levelupPool;
+  AudioPool? _gameoverPool;
+
+  // Settings
+  double _bgmVolume = 0.5;
+  double _seVolume = 0.5;
+  bool _bgmEnabled = true;
+  bool _seEnabled = false;
+
+  double get bgmVolume => _bgmVolume;
+  double get seVolume => _seVolume;
+  bool get bgmEnabled => _bgmEnabled;
+  bool get seEnabled => _seEnabled;
+
+  set bgmVolume(double value) {
+    _bgmVolume = value.clamp(0.0, 1.0);
+    if (_bgmEnabled) {
+      FlameAudio.bgm.audioPlayer.setVolume(_bgmVolume);
+    }
+  }
+
+  set seVolume(double value) {
+    _seVolume = value.clamp(0.0, 1.0);
+  }
+
+  set bgmEnabled(bool value) {
+    _bgmEnabled = value;
+    if (_bgmEnabled) {
+      if (!FlameAudio.bgm.isPlaying) {
+        startBgm();
+      } else {
+        FlameAudio.bgm.audioPlayer.setVolume(_bgmVolume);
+      }
+    } else {
+      stopBgm();
+    }
+  }
+
+  set seEnabled(bool value) {
+    _seEnabled = value;
+  }
+
+  // SE再生のクールダウン（同じSEの連続再生を防ぐ）
+  final Map<String, int> _lastPlayTime = {}; // DateTimeの代わりにmillisecondsを使用
+  static const int _sfxCooldownMs = 50;
+
   Future<void> init() async {
     if (_initialized) return;
-    // Preload sounds
-    await FlameAudio.audioCache.loadAll([
-      'shoot.wav',
-      'hit.wav',
-      'explosion.wav',
-      'levelup.wav',
-      'gameover.wav',
-      // 'bgm.mp3', // BGM might be large, stream it?
-    ]);
+
+    // AudioPoolを作成（各音源に対してプレーヤーをプール）
+    try {
+      _shootPool = await FlameAudio.createPool('shoot.wav', maxPlayers: 3);
+      _hitPool = await FlameAudio.createPool('hit.wav', maxPlayers: 4);
+      _explosionPool = await FlameAudio.createPool('explosion.wav', maxPlayers: 3);
+      _levelupPool = await FlameAudio.createPool('levelup.wav', maxPlayers: 1);
+      _gameoverPool = await FlameAudio.createPool('gameover.wav', maxPlayers: 1);
+    } catch (e) {
+      // プール作成に失敗した場合は無音で続行
+    }
+
     _initialized = true;
   }
 
   void playShoot() {
-    _playSfx('shoot.wav');
+    _playFromPool(_shootPool, 'shoot');
   }
 
   void playHit() {
-    _playSfx('hit.wav');
+    _playFromPool(_hitPool, 'hit', relativeVolume: 0.8);
   }
 
   void playExplosion() {
-    _playSfx('explosion.wav', volume: 0.6);
+    _playFromPool(_explosionPool, 'explosion');
   }
 
   void playLevelUp() {
-    _playSfx('levelup.wav');
+    _playFromPool(_levelupPool, 'levelup');
   }
 
   void playGameOver() {
-    _playSfx('gameover.wav');
+    _playFromPool(_gameoverPool, 'gameover');
   }
 
-  void _playSfx(String file, {double volume = 1.0}) {
+  void _playFromPool(AudioPool? pool, String key, {double relativeVolume = 1.0}) {
+    if (pool == null || !_seEnabled) return;
+
+    // クールダウンチェック（DateTime.now()の代わりにStopwatchベースの時間を使用）
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final lastPlay = _lastPlayTime[key];
+    if (lastPlay != null && (now - lastPlay) < _sfxCooldownMs) {
+      return; // クールダウン中はスキップ
+    }
+    _lastPlayTime[key] = now;
+
     try {
-      FlameAudio.play(file, volume: volume);
+      pool.start(volume: _seVolume * relativeVolume);
     } catch (e) {
-      // Ignore errors if file is empty/missing during dev
-      // print("Audio Error: $e");
+      // エラーは無視
     }
   }
 
   void startBgm() {
+    if (!_bgmEnabled) return;
+
     try {
       if (!FlameAudio.bgm.isPlaying) {
-        FlameAudio.bgm.play('bgm.mp3', volume: 0.5);
+        FlameAudio.bgm.play('bgm.mp3', volume: _bgmVolume);
       }
     } catch (e) {
       // Ignore

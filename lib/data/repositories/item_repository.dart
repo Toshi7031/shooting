@@ -1,7 +1,8 @@
-import 'item_data.dart';
-import 'item_effect.dart';
-import 'rarity.dart';
-import 'tags.dart';
+import '../models/item_data.dart';
+import '../models/rarity.dart';
+import '../models/tags.dart';
+import '../effects/life_leech_effect.dart';
+import '../effects/explosion_effect.dart';
 
 class ItemRepository {
   static final ItemData defaultBall = ItemData(

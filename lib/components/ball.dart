@@ -1,10 +1,10 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import '../data/game_state.dart';
-import '../data/item_data.dart';
-import '../data/item_repository.dart'; // For default item
-import '../data/tags.dart';
-import '../data/rarity.dart';
+import '../data/models/item_data.dart';
+import '../data/repositories/item_repository.dart'; // For default item
+import '../data/models/tags.dart';
+import '../data/models/rarity.dart';
 import 'package:circle_breaker_survivors/breakout_game.dart';
 import 'block.dart';
 import 'core.dart';
@@ -116,8 +116,11 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
     removeFromParent();
   }
 
-  final List<Vector2> _trail = [];
-  final int _trailLength = 10;
+  // リングバッファでTrailを管理（固定長、メモリ効率向上）
+  static const int _trailLength = 10;
+  final List<Vector2?> _trail = List.filled(_trailLength, null);
+  int _trailIndex = 0;
+  int _trailCount = 0;
 
   @override
   void update(double dt) {
@@ -142,10 +145,11 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
 
     position += velocity * dt;
 
-    // Update Trail
-    _trail.add(position.clone());
-    if (_trail.length > _trailLength) {
-      _trail.removeAt(0);
+    // Update Trail (リングバッファ) - 敵が多い時はスキップ
+    if (GameState().enemiesAlive < 100) {
+      _trail[_trailIndex] = position.clone();
+      _trailIndex = (_trailIndex + 1) % _trailLength;
+      if (_trailCount < _trailLength) _trailCount++;
     }
   }
 
@@ -164,27 +168,33 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
     }
   }
 
+  // 静的Paintキャッシュ
+  static final Paint _ballPaint = Paint();
+
   @override
   void render(Canvas canvas) {
-    // Render Trail
-    for (int i = 0; i < _trail.length; i++) {
-      final localPos = (_trail[i] - position).toOffset();
-      final alpha = (i / _trailLength * 255).toInt();
+    // Trailは敵が少ない時のみ描画
+    if (GameState().enemiesAlive < 100 && _trailCount > 0) {
+      for (int i = 0; i < _trailCount; i++) {
+        final idx = (_trailIndex - _trailCount + i + _trailLength) % _trailLength;
+        final trailPos = _trail[idx];
+        if (trailPos == null) continue;
 
-      // Trail color based on rarity?
-      final color = data.rarity.color.withAlpha(alpha);
-      final paint = Paint()..color = color;
+        final localPos = (trailPos - position).toOffset();
+        final alpha = (i / _trailLength * 255).toInt();
+        _ballPaint.color = data.rarity.color.withAlpha(alpha);
 
-      canvas.drawCircle(localPos + Offset(size.x / 2, size.y / 2),
-          size.x / 2 * (i / _trailLength), paint);
+        canvas.drawCircle(localPos + Offset(size.x / 2, size.y / 2),
+            size.x / 2 * (i / _trailLength), _ballPaint);
+      }
     }
 
     if (_sprite != null) {
       _sprite!.render(canvas, size: size);
     } else {
       // Fallback Draw Ball
-      final paint = Paint()..color = data.rarity.color;
-      canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x / 2, paint);
+      _ballPaint.color = data.rarity.color;
+      canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x / 2, _ballPaint);
     }
   }
 }

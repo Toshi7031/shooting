@@ -9,8 +9,8 @@ class ParticleHelper {
   static Component spawnBlockExplosion(Vector2 position) {
     return ParticleSystemComponent(
       particle: Particle.generate(
-        count: 10,
-        lifespan: 0.5,
+        count: 5,
+        lifespan: 0.3,
         generator: (i) => AcceleratedParticle(
           acceleration: Vector2(0, 200),
           speed: Vector2(
@@ -67,7 +67,7 @@ class _ShockwaveComponent extends PositionComponent {
     final opacity = (1.0 - progress) * 0.7;
 
     final paint = Paint()
-      ..color = color.withOpacity(opacity)
+      ..color = color.withAlpha((opacity * 255).toInt())
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0 * (1.0 - progress * 0.5);
 

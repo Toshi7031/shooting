@@ -11,25 +11,40 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
   // Grid cell size 100 covers ~3 blocks (32px) wide.
   final SpatialGrid _grid = SpatialGrid(cellSize: 100);
 
+  // 再利用可能なリスト（GC削減）
+  final List<Ball> _ballsCache = [];
+  final List<BlockEnemy> _blocksCache = [];
+  final Set<BlockEnemy> _currentCollisions = {};
+
   @override
   void update(double dt) {
     super.update(dt);
 
-    // gameRef -> game
-    final balls = game.children.whereType<Ball>().toList();
-    final blocks = game.children.whereType<BlockEnemy>().toList();
-    final core = game.children.whereType<Core>().firstOrNull;
+    // キャッシュリストをクリアして再利用（新しいリスト生成を回避）
+    _ballsCache.clear();
+    _blocksCache.clear();
+
+    Core? core;
+    for (final child in game.children) {
+      if (child is Ball) {
+        _ballsCache.add(child);
+      } else if (child is BlockEnemy) {
+        _blocksCache.add(child);
+      } else if (child is Core) {
+        core = child;
+      }
+    }
 
     if (core == null) return;
 
     // 1. Rebuild Grid
     _grid.clear();
-    for (final block in blocks) {
+    for (final block in _blocksCache) {
       _grid.insert(block);
     }
 
     // 2. Process Balls
-    for (final ball in balls) {
+    for (final ball in _ballsCache) {
       // Ball vs Screen Walls
       bool hitWall = false;
       bool hitVertical = false; // Left/Right
@@ -68,7 +83,7 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
       // We explicitly query with the ball's bounding box
       final nearbyBlocks = _grid.query(ball.toRect());
 
-      final Set<BlockEnemy> currentCollisions = {};
+      _currentCollisions.clear(); // 再利用
 
       for (final block in nearbyBlocks) {
         if (block.isRemoved) {
@@ -76,7 +91,7 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
         }
 
         if (checkCircleAABB(ball, block)) {
-          currentCollisions.add(block);
+          _currentCollisions.add(block);
 
           if (ball.hitBlocks.contains(block)) {
             continue; // Ignore already hit blocks that are still colliding
@@ -106,7 +121,7 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
       }
 
       // Cleanup: Remove blocks that are no longer colliding
-      ball.hitBlocks.removeWhere((b) => !currentCollisions.contains(b));
+      ball.hitBlocks.removeWhere((b) => !_currentCollisions.contains(b));
     }
 
     // Blocks vs Core
@@ -114,7 +129,7 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
     // Actually, we can use grid query around Core too if we wanted,
     // but iteration is O(N) which is fine for now compared to O(N*M) of ball*block.
     // However, blocks move towards core so many will be near it.
-    for (final block in blocks) {
+    for (final block in _blocksCache) {
       if (block.toRect().overlaps(core.toRect())) {
         core.takeDamage(10);
         block.die(); // Self destruct
@@ -131,9 +146,9 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
     final double relX = ballWorldPos.x - blockCenter.x;
     final double relY = ballWorldPos.y - blockCenter.y;
 
-    // Rotate by -block.angle to align with block's local axes
-    final double cosA = cos(-block.angle);
-    final double sinA = sin(-block.angle);
+    // Rotate by -block.angle to align with block's local axes (using cached values)
+    final double cosA = block.cachedCos;
+    final double sinA = block.cachedSin;
     final double localX = relX * cosA - relY * sinA;
     final double localY = relX * sinA + relY * cosA;
 
@@ -166,8 +181,9 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
     final double relX = ballWorldPos.x - blockCenter.x;
     final double relY = ballWorldPos.y - blockCenter.y;
 
-    final double cosA = cos(-block.angle);
-    final double sinA = sin(-block.angle);
+    // Use cached cos/sin values
+    final double cosA = block.cachedCos;
+    final double sinA = block.cachedSin;
     final double localX = relX * cosA - relY * sinA;
     final double localY = relX * sinA + relY * cosA;
 

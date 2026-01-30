@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import '../data/game_state.dart';
-import '../data/item_repository.dart';
-import '../data/item_data.dart';
-import '../data/items/artifact_data.dart';
+import '../data/repositories/item_repository.dart';
+import '../data/models/item_data.dart';
+import '../data/models/artifact_data.dart';
+import '../data/repositories/artifact_repository.dart';
 import '../data/constants.dart';
 import 'widgets/base_menu.dart';
 import 'widgets/pixel_text.dart';
 import 'widgets/pixel_button.dart';
 import 'widgets/pixel_scrollbar.dart';
+import 'widgets/floating_feedback.dart';
 
 class ShopMenu extends StatelessWidget {
   final VoidCallback onClose;
@@ -28,72 +30,175 @@ class ShopMenu extends StatelessWidget {
             const PixelText("-- BALLS --",
                 fontSize: 14, color: GameColors.textSecondary),
             const SizedBox(height: 8),
-            _buildBallItem(context, ItemRepository.defaultBall, 50),
-            _buildBallItem(context, ItemRepository.vampireOrb, 250),
-            _buildBallItem(context, ItemRepository.explosiveOrb, 150),
+            _ShopBallItem(item: ItemRepository.defaultBall, cost: 50),
+            _ShopBallItem(item: ItemRepository.vampireOrb, cost: 250),
+            _ShopBallItem(item: ItemRepository.explosiveOrb, cost: 150),
 
             const SizedBox(height: 16),
             // アーティファクトセクション
             const PixelText("-- ARTIFACTS --",
                 fontSize: 14, color: GameColors.warning),
             const SizedBox(height: 8),
-            _buildArtifactItem(context, ArtifactRepository.headhunter, 500),
-            _buildArtifactItem(context, ArtifactRepository.tabulaRasa, 300),
-            _buildArtifactItem(context, ArtifactRepository.soulEater, 400),
-            _buildArtifactItem(context, ArtifactRepository.berserkersRage, 350),
-            _buildArtifactItem(context, ArtifactRepository.luckyCharm, 300),
+            _ShopArtifactItem(artifact: ArtifactRepository.headhunter, cost: 500),
+            _ShopArtifactItem(artifact: ArtifactRepository.tabulaRasa, cost: 300),
+            _ShopArtifactItem(artifact: ArtifactRepository.soulEater, cost: 400),
+            _ShopArtifactItem(artifact: ArtifactRepository.berserkersRage, cost: 350),
+            _ShopArtifactItem(artifact: ArtifactRepository.luckyCharm, cost: 300),
 
             const SizedBox(height: 16),
             // ユーティリティ
             const PixelText("-- UTILITY --",
                 fontSize: 14, color: GameColors.textSecondary),
             const SizedBox(height: 8),
-            _buildShopItem(context, "Heal ${GameConstants.healAmount} HP",
-                GameConstants.healCost, () {
-              final state = GameState();
-              if (state.gold >= GameConstants.healCost &&
-                  state.coreHp < state.maxCoreHp) {
-                state.addGold(-GameConstants.healCost);
-                state.healCore(GameConstants.healAmount.toDouble());
-                _showMessage(context, "Healed ${GameConstants.healAmount} HP!",
-                    GameColors.success);
-              } else if (state.coreHp >= state.maxCoreHp) {
-                _showMessage(context, "HP is already full!", GameColors.accent);
-              } else {
-                _showMessage(context, "Not enough Gold!", GameColors.error);
-              }
-            }),
-            _buildShopItem(
-                context, "Random Upgrade", GameConstants.randomUpgradeCost, () {
-              final state = GameState();
-              if (state.gold >= GameConstants.randomUpgradeCost) {
-                state.addGold(-GameConstants.randomUpgradeCost);
-                final tags = ['Physical', 'Fire', 'Cold'];
-                final tag = tags[DateTime.now().second % 3];
-                state.upgradeTag(tag, 0.2);
-                _showMessage(context, "Upgraded $tag!", GameColors.success);
-              } else {
-                _showMessage(context, "Not enough Gold!", GameColors.error);
-              }
-            }),
+            _ShopUtilityItem(
+              name: "Heal ${GameConstants.healAmount} HP",
+              cost: GameConstants.healCost,
+              onBuy: (context, buttonKey) {
+                final state = GameState();
+                if (state.gold >= GameConstants.healCost && state.coreHp < state.maxCoreHp) {
+                  state.addGold(-GameConstants.healCost);
+                  state.healCore(GameConstants.healAmount.toDouble());
+                  _showFeedback(context, buttonKey, "+${GameConstants.healAmount} HP", GameColors.success, true);
+                } else if (state.coreHp >= state.maxCoreHp) {
+                  _showFeedback(context, buttonKey, "HP Full!", GameColors.accent, false);
+                } else {
+                  _showFeedback(context, buttonKey, "Not enough Gold!", GameColors.error, false);
+                }
+              },
+            ),
+            _ShopUtilityItem(
+              name: "Random Upgrade",
+              cost: GameConstants.randomUpgradeCost,
+              onBuy: (context, buttonKey) {
+                final state = GameState();
+                if (state.gold >= GameConstants.randomUpgradeCost) {
+                  state.addGold(-GameConstants.randomUpgradeCost);
+                  final tags = ['Physical', 'Fire', 'Cold'];
+                  final tag = tags[DateTime.now().second % 3];
+                  state.upgradeTag(tag, 0.2);
+                  _showFeedback(context, buttonKey, "$tag +20%!", GameColors.success, true);
+                } else {
+                  _showFeedback(context, buttonKey, "Not enough Gold!", GameColors.error, false);
+                }
+              },
+            ),
           ],
         ),
       ),
     );
   }
 
-  void _showMessage(BuildContext context, String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(milliseconds: 500),
-        backgroundColor: color,
-      ),
+  static void _showFeedback(
+    BuildContext context,
+    GlobalKey<PixelButtonState> buttonKey,
+    String message,
+    Color color,
+    bool isSuccess,
+  ) {
+    // ボタンのフィードバック
+    if (isSuccess) {
+      buttonKey.currentState?.flashSuccess();
+    } else {
+      buttonKey.currentState?.flashError();
+    }
+
+    // ボタンの位置を取得してフローティングテキストを表示
+    final renderBox = buttonKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox != null) {
+      final position = renderBox.localToGlobal(Offset.zero);
+      FloatingFeedback.show(
+        context,
+        message,
+        color: color,
+        position: Offset(position.dx - 20, position.dy - 30),
+      );
+    }
+  }
+}
+
+/// アーティファクトアイテム
+class _ShopArtifactItem extends StatefulWidget {
+  final ArtifactData artifact;
+  final int cost;
+
+  const _ShopArtifactItem({required this.artifact, required this.cost});
+
+  @override
+  State<_ShopArtifactItem> createState() => _ShopArtifactItemState();
+}
+
+class _ShopArtifactItemState extends State<_ShopArtifactItem> {
+  final _buttonKey = GlobalKey<PixelButtonState>();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: GameState(),
+      builder: (context, _) {
+        final state = GameState();
+        final isOwned = state.hasArtifact(widget.artifact);
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    PixelText(widget.artifact.name, fontSize: 14, color: isOwned ? GameColors.textSecondary : GameColors.warning),
+                    PixelText(widget.artifact.description, fontSize: 10, color: GameColors.textSecondary),
+                    PixelText(isOwned ? "OWNED" : "${widget.cost} G", fontSize: 12, color: isOwned ? GameColors.textSecondary : GameColors.accent),
+                  ],
+                ),
+              ),
+              PixelButton(
+                key: _buttonKey,
+                label: isOwned ? "OWNED" : "BUY",
+                enabled: !isOwned,
+                onPressed: () => _onBuy(context, state),
+                width: 80,
+                height: 30,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildArtifactItem(
-      BuildContext context, ArtifactData artifact, int cost) {
+  void _onBuy(BuildContext context, GameState state) {
+    if (state.gold < widget.cost) {
+      ShopMenu._showFeedback(context, _buttonKey, "Not enough Gold!", GameColors.error, false);
+      return;
+    }
+    if (!state.hasEmptyArtifactSlot) {
+      ShopMenu._showFeedback(context, _buttonKey, "No slots!", GameColors.error, false);
+      return;
+    }
+    state.addGold(-widget.cost);
+    state.equipArtifact(widget.artifact);
+    ShopMenu._showFeedback(context, _buttonKey, "Equipped!", GameColors.success, true);
+  }
+}
+
+/// ボールアイテム
+class _ShopBallItem extends StatefulWidget {
+  final ItemData item;
+  final int cost;
+
+  const _ShopBallItem({required this.item, required this.cost});
+
+  @override
+  State<_ShopBallItem> createState() => _ShopBallItemState();
+}
+
+class _ShopBallItemState extends State<_ShopBallItem> {
+  final _buttonKey = GlobalKey<PixelButtonState>();
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -103,32 +208,17 @@ class ShopMenu extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                PixelText(artifact.name,
-                    fontSize: 14, color: GameColors.warning),
-                PixelText(artifact.description,
+                PixelText(widget.item.name, fontSize: 16),
+                PixelText(widget.item.description,
                     fontSize: 10, color: GameColors.textSecondary),
-                PixelText("$cost G", fontSize: 12, color: GameColors.accent),
+                PixelText("${widget.cost} G", fontSize: 12, color: GameColors.accent),
               ],
             ),
           ),
           PixelButton(
+            key: _buttonKey,
             label: "BUY",
-            onPressed: () {
-              final state = GameState();
-              if (state.gold < cost) {
-                _showMessage(context, "Not enough Gold!", GameColors.error);
-                return;
-              }
-              if (!state.hasEmptyArtifactSlot) {
-                _showMessage(
-                    context, "No empty artifact slots!", GameColors.error);
-                return;
-              }
-              state.addGold(-cost);
-              state.equipArtifact(artifact);
-              _showMessage(
-                  context, "Equipped ${artifact.name}!", GameColors.warning);
-            },
+            onPressed: () => _onBuy(context),
             width: 80,
             height: 30,
           ),
@@ -137,46 +227,39 @@ class ShopMenu extends StatelessWidget {
     );
   }
 
-  Widget _buildBallItem(BuildContext context, ItemData item, int cost) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                PixelText(item.name, fontSize: 16),
-                PixelText(item.description,
-                    fontSize: 10, color: GameColors.textSecondary),
-                PixelText("$cost G", fontSize: 12, color: GameColors.accent),
-              ],
-            ),
-          ),
-          PixelButton(
-            label: "BUY",
-            onPressed: () {
-              final state = GameState();
-              if (state.gold >= cost) {
-                state.addGold(-cost);
-                state.addBall(item);
-                _showMessage(
-                    context, "Bought ${item.name}!", GameColors.success);
-              } else {
-                _showMessage(context, "Not enough Gold!", GameColors.error);
-              }
-            },
-            width: 80,
-            height: 30,
-          ),
-        ],
-      ),
-    );
+  void _onBuy(BuildContext context) {
+    final state = GameState();
+    if (state.gold >= widget.cost) {
+      state.addGold(-widget.cost);
+      state.addBall(widget.item);
+      ShopMenu._showFeedback(context, _buttonKey, "+1 ${widget.item.name}!", GameColors.success, true);
+    } else {
+      ShopMenu._showFeedback(context, _buttonKey, "Not enough Gold!", GameColors.error, false);
+    }
   }
+}
 
-  Widget _buildShopItem(
-      BuildContext context, String name, int cost, VoidCallback onBuy) {
+/// ユーティリティアイテム
+class _ShopUtilityItem extends StatefulWidget {
+  final String name;
+  final int cost;
+  final void Function(BuildContext, GlobalKey<PixelButtonState>) onBuy;
+
+  const _ShopUtilityItem({
+    required this.name,
+    required this.cost,
+    required this.onBuy,
+  });
+
+  @override
+  State<_ShopUtilityItem> createState() => _ShopUtilityItemState();
+}
+
+class _ShopUtilityItemState extends State<_ShopUtilityItem> {
+  final _buttonKey = GlobalKey<PixelButtonState>();
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
@@ -186,14 +269,15 @@ class ShopMenu extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                PixelText(name, fontSize: 16),
-                PixelText("$cost G", fontSize: 12, color: GameColors.accent),
+                PixelText(widget.name, fontSize: 16),
+                PixelText("${widget.cost} G", fontSize: 12, color: GameColors.accent),
               ],
             ),
           ),
           PixelButton(
+            key: _buttonKey,
             label: "BUY",
-            onPressed: onBuy,
+            onPressed: () => widget.onBuy(context, _buttonKey),
             width: 80,
             height: 30,
           ),

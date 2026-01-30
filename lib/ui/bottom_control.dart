@@ -4,6 +4,7 @@ import 'shop_menu.dart';
 import 'pause_menu.dart';
 import 'level_up_menu.dart'; // Import
 import '../data/game_state.dart';
+import '../main.dart'; // For gameInstance
 
 class BottomControls extends StatelessWidget {
   const BottomControls({super.key});
@@ -46,6 +47,7 @@ class BottomControls extends StatelessWidget {
                       },
                       onRestart: () {
                         GameState().reset(); // Reset State
+                        gameInstance.resetGame(); // Reset game components
                         GameState().isPaused = false;
                         Navigator.pop(ctx);
                       },

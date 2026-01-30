@@ -2,7 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'block.dart';
 import '../data/game_state.dart';
-import '../data/enemy_mod.dart';
+import '../data/models/enemy_mod.dart';
 import '../systems/audio_manager.dart';
 import '../systems/particle_manager.dart';
 

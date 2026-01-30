@@ -34,7 +34,6 @@ doc/api/
 ios/Flutter/.last_build_id
 
 # FVM
-.fvm/flutter_sdk
 
 # Python / uv
 __pycache__/
@@ -56,3 +55,6 @@ app.*.map.json
 android/app/debug
 android/app/profile
 android/app/release
+
+# FVM Version Cache
+.fvm/

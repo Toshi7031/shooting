@@ -4,8 +4,9 @@ import 'widgets/pixel_panel.dart';
 import 'widgets/pixel_text.dart';
 import 'widgets/pixel_button.dart';
 import 'widgets/pixel_scrollbar.dart';
+import 'widgets/sound_settings_widget.dart';
 
-class PauseMenu extends StatelessWidget {
+class PauseMenu extends StatefulWidget {
   final VoidCallback onResume;
   final VoidCallback onRestart;
 
@@ -14,6 +15,13 @@ class PauseMenu extends StatelessWidget {
     required this.onResume,
     required this.onRestart,
   });
+
+  @override
+  State<PauseMenu> createState() => _PauseMenuState();
+}
+
+class _PauseMenuState extends State<PauseMenu> {
+  bool _showSettings = false;
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +34,23 @@ class PauseMenu extends StatelessWidget {
           child: Column(
             children: [
               const PixelText("PAUSED", fontSize: 24, color: Colors.white),
-              const SizedBox(height: 20),
+              const SizedBox(height: 10),
 
-              // Stats Container
+              // Toggle Button
+              PixelButton(
+                label: _showSettings ? "SHOW STATS" : "AUDIO SETTINGS",
+                onPressed: () {
+                  setState(() {
+                    _showSettings = !_showSettings;
+                  });
+                },
+                width: 160,
+                height: 30,
+                color: Colors.blueGrey,
+              ),
+              const SizedBox(height: 10),
+
+              // Content Area
               Expanded(
                 child: Container(
                   width: double.infinity,
@@ -37,48 +59,20 @@ class PauseMenu extends StatelessWidget {
                     color: Colors.black.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: PixelScrollbar(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const PixelText("STATS",
-                            fontSize: 16, color: Colors.yellow),
-                        const Divider(color: Colors.white24),
-                        _buildStat("Level", "${GameState().level}"),
-                        _buildStat("Wave", "${GameState().currentWave}"),
-                        _buildStat("Gold", "${GameState().gold}"),
-                        const SizedBox(height: 10),
-                        const PixelText("MULTIPLIERS",
-                            fontSize: 12, color: Colors.cyan),
-                        _buildStat("Physical",
-                            "x${GameState().tagMultipliers['Physical']?.toStringAsFixed(1)}"),
-                        _buildStat("Fire",
-                            "x${GameState().tagMultipliers['Fire']?.toStringAsFixed(1)}"),
-                        _buildStat("Cold",
-                            "x${GameState().tagMultipliers['Cold']?.toStringAsFixed(1)}"),
-                        const SizedBox(height: 10),
-                        const PixelText("SKILLS",
-                            fontSize: 12, color: Colors.orange),
-                        _buildStat("Atk Speed",
-                            "x${GameState().fireIntervalMultiplier.toStringAsFixed(1)}"),
-                        _buildStat("Pierce", "${GameState().pierceCount}"),
-                        _buildStat("Bounce", "${GameState().maxBounces}"),
-                      ],
-                    ),
-                  ),
+                  child: _showSettings ? const SoundSettingsWidget() : _buildStats(),
                 ),
               ),
 
               const SizedBox(height: 20),
               PixelButton(
                 label: "RESUME",
-                onPressed: onResume,
+                onPressed: widget.onResume,
                 width: 200,
               ),
               const SizedBox(height: 10),
               PixelButton(
                 label: "RESTART",
-                onPressed: onRestart,
+                onPressed: widget.onRestart,
                 width: 200,
                 color: Colors.redAccent,
               ),
@@ -86,6 +80,31 @@ class PauseMenu extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStats() {
+    return PixelScrollbar(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const PixelText("STATS", fontSize: 16, color: Colors.yellow),
+          const Divider(color: Colors.white24),
+          _buildStat("Level", "${GameState().level}"),
+          _buildStat("Wave", "${GameState().currentWave}"),
+          _buildStat("Gold", "${GameState().gold}"),
+          const SizedBox(height: 10),
+          const PixelText("MULTIPLIERS", fontSize: 12, color: Colors.cyan),
+          _buildStat("Physical", "x${GameState().tagMultipliers['Physical']?.toStringAsFixed(1)}"),
+          _buildStat("Fire", "x${GameState().tagMultipliers['Fire']?.toStringAsFixed(1)}"),
+          _buildStat("Cold", "x${GameState().tagMultipliers['Cold']?.toStringAsFixed(1)}"),
+          const SizedBox(height: 10),
+          const PixelText("SKILLS", fontSize: 12, color: Colors.orange),
+          _buildStat("Atk Speed", "x${GameState().fireIntervalMultiplier.toStringAsFixed(1)}"),
+          _buildStat("Pierce", "${GameState().pierceCount}"),
+          _buildStat("Bounce", "${GameState().maxBounces}"),
+        ],
       ),
     );
   }

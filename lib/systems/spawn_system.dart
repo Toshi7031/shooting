@@ -3,7 +3,7 @@ import 'dart:math';
 import '../components/block.dart';
 import '../components/boss_enemy.dart';
 import '../data/game_state.dart';
-import '../data/enemy_mod.dart';
+import '../data/models/enemy_mod.dart';
 import '../data/constants.dart';
 
 class SpawnSystem extends Component with HasGameReference {
@@ -11,7 +11,8 @@ class SpawnSystem extends Component with HasGameReference {
   final Random _rng = Random();
 
   SpawnSystem() {
-    _timer = Timer(1.0, repeat: true, onTick: _spawnBlock);
+    // 0.3秒ごとにスポーン処理
+    _timer = Timer(0.3, repeat: true, onTick: _spawnBatch);
   }
 
   @override
@@ -19,7 +20,18 @@ class SpawnSystem extends Component with HasGameReference {
     _timer.update(dt);
   }
 
-  void _spawnBlock() {
+  /// 複数体を一度にスポーン（最大10体）
+  void _spawnBatch() {
+    final state = GameState();
+    if (state.isGameOver || state.isPaused) return;
+
+    // 一度に最大10体スポーン
+    for (int i = 0; i < 10 && state.enemiesToSpawn > 0; i++) {
+      _spawnSingleEnemy();
+    }
+  }
+
+  void _spawnSingleEnemy() {
     final state = GameState();
     if (state.isGameOver || state.isPaused) return;
     if (state.enemiesToSpawn <= 0) return;

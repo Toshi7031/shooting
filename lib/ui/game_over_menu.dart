@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/game_state.dart';
+import '../main.dart'; // For gameInstance
 import 'widgets/pixel_text.dart';
 import 'widgets/pixel_button.dart';
 
@@ -28,6 +29,7 @@ class GameOverMenu extends StatelessWidget {
                   label: "RETRY",
                   onPressed: () {
                     GameState().reset();
+                    gameInstance.resetGame();
                   },
                 ),
               ],

@@ -2,7 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../data/game_state.dart';
-import '../data/enemy_mod.dart';
+import '../data/models/enemy_mod.dart';
 import '../systems/particle_manager.dart';
 import '../systems/audio_manager.dart';
 
@@ -11,6 +11,14 @@ class BlockEnemy extends PositionComponent with HasGameReference {
   final double damageStart = 10;
   double damageMultiplier = 1.0; // コアへの自爆ダメージ倍率
   double armorMultiplier = 1.0; // 被ダメージ倍率（低いほど硬い）
+
+  // cos/sinキャッシュ（衝突判定の高速化用）
+  double _cachedCos = 1.0;
+  double _cachedSin = 0.0;
+  double _cachedAngle = 0.0;
+
+  double get cachedCos => _cachedCos;
+  double get cachedSin => _cachedSin;
 
   /// このエネミーが持つMod
   final List<EnemyMod> mods = [];
@@ -75,52 +83,33 @@ class BlockEnemy extends PositionComponent with HasGameReference {
 
     // Rotate block perpendicular to movement direction (long side faces core)
     if (velocity.length2 > 0) {
-      angle = math.atan2(velocity.y, velocity.x) + math.pi / 2;
+      final newAngle = math.atan2(velocity.y, velocity.x) + math.pi / 2;
+      if (newAngle != _cachedAngle) {
+        angle = newAngle;
+        _cachedAngle = newAngle;
+        _cachedCos = math.cos(-newAngle);
+        _cachedSin = math.sin(-newAngle);
+      }
     }
   }
 
+  // 静的Paintキャッシュ（毎フレームの生成を回避）
+  static final Paint _paintNormal = Paint()..color = const Color(0xFFCC3333);
+  static final Paint _paintRare = Paint()..color = const Color(0xFFCCAA33);
+  static final Paint _paintRareBorder = Paint()
+    ..color = const Color(0xFFFFDD66)
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 2;
+
   @override
   void render(Canvas canvas) {
-    super.render(canvas);
-
-    // Procedural Pixel Art: Brick
-    // Rare敵は黄色っぽい色で光る
-    final baseColor =
-        isRare ? const Color(0xFFCCAA33) : const Color(0xFFCC3333);
-    final paintBase = Paint()..color = baseColor;
-    final paintMortar = Paint()
-      ..color = isRare ? const Color(0xFF665500) : const Color(0xFF660000);
-    final paintHighlight = Paint()
-      ..color = isRare ? const Color(0xFFFFDD66) : const Color(0xFFFF6666);
-
+    // 軽量描画: 単純な矩形のみ
     final rect = size.toRect();
-    canvas.drawRect(rect, paintBase);
+    canvas.drawRect(rect, isRare ? _paintRare : _paintNormal);
 
-    // Rare敵には輝くボーダーを追加
+    // Rare敵のボーダー（軽量版）
     if (isRare) {
-      final glowPaint = Paint()
-        ..color = Colors.yellow.withAlpha(100)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2;
-      canvas.drawRect(rect.inflate(2), glowPaint);
-    }
-
-    // Borders (Mortar)
-    final double pixel = 2.0;
-    canvas.drawRect(
-        Rect.fromLTWH(0, 0, size.x, pixel), paintHighlight); // Top Light
-    canvas.drawRect(Rect.fromLTWH(0, size.y - pixel, size.x, pixel),
-        paintMortar); // Bottom Shadow
-    canvas.drawRect(
-        Rect.fromLTWH(0, 0, pixel, size.y), paintHighlight); // Left Light
-    canvas.drawRect(Rect.fromLTWH(size.x - pixel, 0, pixel, size.y),
-        paintMortar); // Right Shadow
-
-    // Inner Detail (Cracks?)
-    if (hp < damageStart / 2) {
-      // Drack crack
-      canvas.drawLine(Offset(size.x / 2, size.y / 4),
-          Offset(size.x / 4, size.y * 0.75), paintMortar..strokeWidth = 2);
+      canvas.drawRect(rect, _paintRareBorder);
     }
   }
 
@@ -134,13 +123,19 @@ class BlockEnemy extends PositionComponent with HasGameReference {
   }
 
   void die() {
-    // Spawn particles
-    game.add(ParticleHelper.spawnBlockExplosion(position.clone()));
-    AudioManager().playExplosion();
+    final state = GameState();
+
+    // パーティクルは敵が少ない時のみ（パフォーマンス対策）
+    if (state.enemiesAlive < 50) {
+      game.add(ParticleHelper.spawnBlockExplosion(position.clone()));
+      AudioManager().playExplosion();
+    } else if (state.enemiesAlive % 10 == 0) {
+      // 多い時は10体に1回だけ音を鳴らす
+      AudioManager().playExplosion();
+    }
 
     removeFromParent();
     // Drop XP/Gold
-    final state = GameState();
     final goldAmount = (10 * state.goldMultiplier).toInt();
     state.addRewards(gold: goldAmount, xp: 20);
     state.enemyKilled();

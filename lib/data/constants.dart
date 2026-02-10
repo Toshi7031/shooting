@@ -8,6 +8,7 @@ class GameColors {
   static const Color success = Colors.green;
   static const Color error = Colors.red;
   static const Color warning = Colors.orange;
+  static const Color legendary = Colors.purpleAccent;
 }
 
 class GameConstants {

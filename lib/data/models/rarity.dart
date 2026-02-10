@@ -5,6 +5,7 @@ enum Rarity {
   magic,
   rare,
   unique,
+  legendary,
 }
 
 extension RarityExtension on Rarity {
@@ -18,6 +19,8 @@ extension RarityExtension on Rarity {
         return Colors.yellow;
       case Rarity.unique:
         return Colors.orange;
+      case Rarity.legendary:
+        return Colors.purpleAccent;
     }
   }
 
@@ -31,6 +34,8 @@ extension RarityExtension on Rarity {
         return 'Rare';
       case Rarity.unique:
         return 'Unique';
+      case Rarity.legendary:
+        return 'LEGENDARY';
     }
   }
 }

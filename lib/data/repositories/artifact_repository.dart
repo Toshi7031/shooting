@@ -10,7 +10,7 @@ import '../effects/lucky_charm_effect.dart';
 class ArtifactRepository {
   static final ArtifactData headhunter = ArtifactData(
     name: "Headhunter",
-    description: "Rare敵を倒すと、そのModを5秒間盗む。",
+    description: "Rare敵を倒すと、そのModを5秒間盗む。(同種最大5スタック)",
     rarity: Rarity.unique,
     effects: [HeadhunterEffect()],
   );

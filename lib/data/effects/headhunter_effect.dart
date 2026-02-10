@@ -17,33 +17,28 @@ class HeadhunterEffect extends ItemEffect {
     final state = GameState();
     for (final mod in block.mods) {
       debugPrint("Headhunter: Stole ${mod.type.label} from Rare enemy!");
-
-      // Modに応じた一時的バフを適用
-      // バランス調整: 効果時間を20秒 -> 5秒に短縮
       const duration = 5.0;
 
       switch (mod.type) {
         case EnemyModType.haste:
-          state.addStolenMod('haste', mod.value, duration);
-          debugPrint(
-            "  -> Attack Speed +${((mod.value - 1) * 100).toInt()}% for ${duration}s");
+          state.addStolenMod('haste', 1.5, duration);
+          debugPrint("  -> Attack Speed +50%");
           break;
         case EnemyModType.giant:
-          // 巨大化は意味がないので、ダメージボーナスに変換
-          state.addStolenMod('damage', mod.value * 0.5, duration);
-          debugPrint(
-            "  -> Damage +${((mod.value * 0.5 - 1) * 100).toInt()}% for ${duration}s");
+          state.addStolenMod('giant', 1.5, duration);
+          debugPrint("  -> Ball Size 1.5x");
           break;
         case EnemyModType.enraged:
-          state.addStolenMod('damage', mod.value, duration);
-          debugPrint(
-            "  -> Damage +${((mod.value - 1) * 100).toInt()}% for ${duration}s");
+          state.addStolenMod('damage', 1.5, duration);
+          debugPrint("  -> Global Damage +50%");
           break;
         case EnemyModType.armored:
-          // アーマーはCore耐久力として適用
-          state.addStolenMod('armor', mod.value, duration);
-          debugPrint(
-            "  -> Damage Reduction +${((1 - mod.value) * 100).toInt()}% for ${duration}s");
+          state.addStolenMod('armor', 0.5, duration);
+          debugPrint("  -> Damage Reduction 50%");
+          break;
+        case EnemyModType.gravityWell:
+          state.addStolenMod('slow_aura', 1.0, duration);
+          debugPrint("  -> Slow Aura Active");
           break;
       }
     }

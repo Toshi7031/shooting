@@ -12,6 +12,14 @@ class GameState extends ChangeNotifier {
   int currentWave = 1;
   double coreHp = 100.0;
   double maxCoreHp = 100.0;
+  double shield = 0.0;
+  double maxShield = 50.0; // Arbitrary cap or define in constants
+
+  void addShield(double amount) {
+    shield += amount;
+    if (shield > maxShield) shield = maxShield;
+    notifyListeners();
+  }
 
   // Wave Stats
   // int totalBalls = 3; // Deprecated, use ballLoadout.length
@@ -166,12 +174,21 @@ class GameState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addBalls(ItemData item, int count) {
+    for (int i = 0; i < count; i++) {
+      ballLoadout.add(item);
+    }
+    availableBalls += count;
+    notifyListeners();
+  }
+
   void reset() {
     isGameOver = false;
     isGameActive = false;
     pendingUpgrades = 0;
     isPaused = false;
     coreHp = maxCoreHp;
+    shield = 0.0;
     currentWave = 1;
     isBossWave = false;
     gold = 0;
@@ -199,7 +216,7 @@ class GameState extends ChangeNotifier {
       ItemRepository.defaultBall,
     ];
     availableBalls = 3;
-    availableBalls = 3;
+    fieldBallCount = 0;
     // 初期敵数
     enemiesToSpawn = 50;
     enemiesAlive = 0;
@@ -239,6 +256,65 @@ class GameState extends ChangeNotifier {
     // notifyListenersは高頻度なのでスキップ
   }
 
+  int fieldBallCount = 0;
+
+  void updateFieldBallCount(int delta) {
+    if (isGameOver) return; // Prevent updates after game over
+    fieldBallCount += delta;
+    if (fieldBallCount < 0) fieldBallCount = 0;
+    notifyListeners();
+  }
+
+  // Singularity Merge Callback
+  Function(int count, ItemData reward)? onMergeRequest;
+
+  bool requestMerge(int count, ItemData reward) {
+    if (ballLoadout.length >= count) {
+      // コスト消費: 先頭から指定数だけ削除 (基本的には古いもの/Defaultから)
+      // 特定のボールを優先的に削除するロジックが必要ならここで実装
+      for (int i = 0; i < count; i++) {
+        if (ballLoadout.isNotEmpty) {
+          ballLoadout.removeAt(0);
+        }
+      }
+
+      availableBalls -= count;
+
+      addBall(reward);
+
+      onMergeRequest?.call(count, reward);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  bool requestSpecificMerge(ItemData requiredTier1, ItemData reward, int count) {
+    // 1. Count specific balls
+    final matchingBalls = ballLoadout.where((b) => b.name == requiredTier1.name).length;
+
+    if (matchingBalls >= count) {
+      // 2. Remove balls
+      int removed = 0;
+      ballLoadout.removeWhere((b) {
+        if (removed < count && b.name == requiredTier1.name) {
+          removed++;
+          return true;
+        }
+        return false;
+      });
+
+      // 3. Update available balls and add reward
+      availableBalls -= count;
+      addBall(reward);
+
+      onMergeRequest?.call(count, reward);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
   bool consumeBall() {
     if (availableBalls > 0) {
       availableBalls--;
@@ -269,6 +345,17 @@ class GameState extends ChangeNotifier {
 
   /// 盗んだModを追加
   void addStolenMod(String type, double value, double duration) {
+    // 同種のModをカウント
+    final sameTypeMods = stolenMods.where((m) => m.type == type).toList();
+
+    // 制限(5個)を超えていたら古いものを削除
+    if (sameTypeMods.length >= 5) {
+      // sameTypeModsは新しい順ではなくリスト順（追加順）なので、最初の要素が一番古いはず
+      // ただし、stolenModsから削除する必要がある
+      final oldest = sameTypeMods.first;
+      stolenMods.remove(oldest);
+    }
+
     stolenMods
         .add(StolenMod(type: type, value: value, remainingTime: duration));
     notifyListeners();
@@ -291,6 +378,10 @@ class GameState extends ChangeNotifier {
       multiplier *= mod.value;
     }
     return multiplier;
+  }
+
+  bool isStolenModActive(String type) {
+    return stolenMods.any((m) => m.type == type);
   }
 }
 

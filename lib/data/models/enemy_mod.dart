@@ -6,6 +6,7 @@ enum EnemyModType {
   giant, // サイズUP + HPアップ
   enraged, // ダメージUP（Coreへの自爆ダメージ）
   armored, // 被ダメージ減少
+  gravityWell, // ボール減速
 }
 
 /// Modの表示名と色
@@ -20,6 +21,8 @@ extension EnemyModTypeExtension on EnemyModType {
         return 'Enraged';
       case EnemyModType.armored:
         return 'Armored';
+      case EnemyModType.gravityWell:
+        return 'Gravity Well';
     }
   }
 
@@ -33,6 +36,8 @@ extension EnemyModTypeExtension on EnemyModType {
         return Colors.red;
       case EnemyModType.armored:
         return Colors.grey;
+      case EnemyModType.gravityWell:
+        return Colors.indigo;
     }
   }
 
@@ -47,6 +52,8 @@ extension EnemyModTypeExtension on EnemyModType {
         return 2.0; // 2x damage
       case EnemyModType.armored:
         return 0.5; // 50% damage reduction
+      case EnemyModType.gravityWell:
+        return 0.5; // 50% ball speed reduction (if close)?
     }
   }
 }

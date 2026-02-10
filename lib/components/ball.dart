@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import '../systems/pool_manager.dart';
 import '../data/game_state.dart';
 import '../data/models/item_data.dart';
 import '../data/repositories/item_repository.dart'; // For default item
@@ -9,33 +10,42 @@ import 'package:circle_breaker_survivors/breakout_game.dart';
 import 'block.dart';
 import 'core.dart';
 
-class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
+class Ball extends CircleComponent with HasGameReference<BreakoutGame> {
   Vector2 velocity = Vector2(100, -200); // Initial velocity
   // final double baseSpeed = 300.0; // Replaced by ItemData.stats.speed
   final double maxStepPerFrame = 16.0; // Less than block size (32 or 16)
 
-  late double damage;
+  late double baseDamage;
   final Set<String> tags = {};
   int pierceCount = 0;
   int maxBounces = 0;
   int currentBounces = 0;
   final List<BlockEnemy> hitBlocks = []; // Track hits for pierce
 
-  final ItemData data;
+  ItemData itemData; // Changed from 'data' to 'itemData' and made non-final
 
   // Constructor now accepts optional ItemData, defaults to Basic
-  Ball({required Vector2 position, ItemData? itemData})
-      : data = itemData ?? ItemRepository.defaultBall,
-        super(
-            position: position, size: Vector2.all(10), anchor: Anchor.center) {
+  Ball({required Vector2 position, required this.itemData})
+      : super(
+            position: position,
+            radius: 10, // Changed from size: Vector2.all(10)
+            anchor: Anchor.center,
+            paint: Paint()..color = Colors.white) {
+    // Added paint
+    _init();
+  }
+
+  void _init() {
     final state = GameState();
     double multiplier = 1.0;
 
     pierceCount = state.pierceCount;
     maxBounces = state.maxBounces;
 
+    // Clear existing tags before loading new ones
+    tags.clear();
     // Load Tags from ItemData
-    for (final t in data.tags) {
+    for (final t in itemData.tags) {
       String key = '';
       switch (t) {
         case GameTag.physical:
@@ -66,12 +76,20 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
       multiplier *= 1.5;
     }
 
-    damage = data.stats.damage * multiplier;
+    baseDamage = itemData.stats.damage * multiplier;
+  }
+
+  double get damage {
+    double efficiency = 0.1;
+    if (itemData.name == 'Juggernaut Sphere') {
+      efficiency = 0.3;
+    }
+    return baseDamage * (1.0 + currentBounces * efficiency);
   }
 
   void onHit(BlockEnemy block) {
     // 自身のエフェクトを実行
-    for (final effect in data.effects) {
+    for (final effect in itemData.effects) {
       effect.onHit(this, block);
     }
 
@@ -81,7 +99,7 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
 
   void onKill(BlockEnemy block) {
     // 自身のエフェクトを実行
-    for (final effect in data.effects) {
+    for (final effect in itemData.effects) {
       effect.onKill(this, block);
     }
 
@@ -109,12 +127,24 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
     }
   }
 
-  void returnToCore() {
-    // Return to inventory
-    GameState().returnBall(); // Assuming GameState is defined elsewhere
-    // Remove from world
-    removeFromParent();
+  void reset(Vector2 position, ItemData newItemData) {
+    this.position.setFrom(position);
+    itemData = newItemData;
+    velocity = Vector2.zero();
+    currentBounces = 0;
+    hitBlocks.clear();
+    _trailIndex = 0;
+    _trailCount = 0;
+    for (int i = 0; i < _trailLength; i++) _trail[i] = null;
+    isCounted = true;
+    _init();
   }
+
+  void release() {
+    GamePools().ballPool.returnToPool(this);
+  }
+
+  bool isCounted = true;
 
   // リングバッファでTrailを管理（固定長、メモリ効率向上）
   static const int _trailLength = 10;
@@ -128,7 +158,7 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
     super.update(dt);
     // Enforce Speed from Stats
     double speed = velocity.length;
-    double targetSpeed = data.stats.speed;
+    double targetSpeed = itemData.stats.speed;
     // Optional: Smoothly adjust speed or just clamp?
     // For now, just ensure it doesn't drift?
     // Actually, velocity shouldn't change magnitude unless friction.
@@ -136,6 +166,10 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
     if (speed > 0) {
       velocity = velocity.normalized() * targetSpeed;
     }
+
+    // Giant Mod: 2.0x Size
+    final giantMult = GameState().getStolenModMultiplier('giant');
+    size = Vector2.all(10.0 * giantMult); // Base size 10
 
     // Speed Cap / Tunneling Prevention
     double dist = velocity.length * dt;
@@ -158,11 +192,11 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
   @override
   Future<void> onLoad() async {
     super.onLoad();
-    if (data.assetPath != null) {
+    if (itemData.assetPath != null) {
       try {
-        _sprite = await game.loadSprite(data.assetPath!);
+        _sprite = await game.loadSprite(itemData.assetPath!);
       } catch (e) {
-        debugPrint("Error loading sprite for ${data.name}: $e");
+        debugPrint("Error loading sprite for ${itemData.name}: $e");
         // _sprite remains null, so fallback render will be used.
       }
     }
@@ -182,7 +216,7 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
 
         final localPos = (trailPos - position).toOffset();
         final alpha = (i / _trailLength * 255).toInt();
-        _ballPaint.color = data.rarity.color.withAlpha(alpha);
+        _ballPaint.color = itemData.rarity.color.withAlpha(alpha);
 
         canvas.drawCircle(localPos + Offset(size.x / 2, size.y / 2),
             size.x / 2 * (i / _trailLength), _ballPaint);
@@ -193,8 +227,21 @@ class Ball extends PositionComponent with HasGameReference<BreakoutGame> {
       _sprite!.render(canvas, size: size);
     } else {
       // Fallback Draw Ball
-      _ballPaint.color = data.rarity.color;
+      _ballPaint.color = itemData.rarity.color;
       canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x / 2, _ballPaint);
     }
+  }
+  @override
+  void onMount() {
+    super.onMount();
+    GameState().updateFieldBallCount(1);
+  }
+
+  @override
+  void onRemove() {
+    if (isCounted) {
+      GameState().updateFieldBallCount(-1);
+    }
+    super.onRemove();
   }
 }

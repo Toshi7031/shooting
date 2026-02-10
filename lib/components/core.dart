@@ -108,7 +108,7 @@ class Core extends PositionComponent with HasGameReference {
         itemData: item,
       );
 
-      ball.velocity = targetDir * ball.data.stats.speed;
+      ball.velocity = targetDir * ball.itemData.stats.speed;
 
       game.add(ball);
       AudioManager().playShoot(); // Play shoot sound
@@ -116,7 +116,8 @@ class Core extends PositionComponent with HasGameReference {
   }
 
   void takeDamage(double amount) {
-    GameState().damageCore(amount);
+    final armorMult = GameState().getStolenModMultiplier('armor');
+    GameState().damageCore(amount * armorMult);
   }
 
   @override

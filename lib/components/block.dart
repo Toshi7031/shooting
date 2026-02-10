@@ -57,11 +57,16 @@ class BlockEnemy extends PositionComponent with HasGameReference {
         case EnemyModType.armored:
           armorMultiplier *= mod.value;
           break;
+        case EnemyModType.gravityWell:
+          // Ball slows down near this enemy (Handled in Collision/Ball system)
+          break;
       }
     }
   }
 
-  /// 攻撃速度倍率を取得（haste mod用）
+
+
+  /// 攻撃速度倍率を取得（haste mod用 + Slow Aura）
   double get speedMultiplier {
     double multiplier = 1.0;
     for (final mod in mods) {
@@ -69,15 +74,37 @@ class BlockEnemy extends PositionComponent with HasGameReference {
         multiplier *= mod.value;
       }
     }
+
+    // CoreのSlow Aura
+    if (GameState().isStolenModActive('slow_aura')) {
+      // Coreの位置は画面中央と仮定 (GameRefから取得可能だが簡易的に)
+      // HasGameReferenceがあるので game.size / 2
+      final corePos = game.size / 2;
+      if (position.distanceTo(corePos) < 200) {
+        multiplier *= 0.5;
+      }
+    }
+
     return multiplier;
   }
 
   Vector2 velocity = Vector2.zero();
 
+  double stunDuration = 0.0;
+
+  void applyStun(double duration) {
+    stunDuration = math.max(stunDuration, duration);
+  }
+
   @override
   void update(double dt) {
     super.update(dt);
     if (GameState().isPaused) return;
+
+    if (stunDuration > 0) {
+      stunDuration -= dt;
+      return; // Stop movement
+    }
 
     position += velocity * speedMultiplier * dt;
 

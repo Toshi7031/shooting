@@ -6,6 +6,7 @@ import 'spatial_grid.dart';
 import 'dart:math';
 import '../components/core.dart';
 import 'package:circle_breaker_survivors/breakout_game.dart';
+import '../data/game_state.dart';
 
 class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
   // Grid cell size 100 covers ~3 blocks (32px) wide.
@@ -72,7 +73,8 @@ class CollisionSystem extends Component with HasGameReference<BreakoutGame> {
           if (hitVertical) ball.velocity.x = -ball.velocity.x;
           if (hitHorizontal) ball.velocity.y = -ball.velocity.y;
         } else {
-          ball.returnToCore();
+          GameState().returnBall();
+          ball.release();
           continue; // Stop checking blocks
         }
       }

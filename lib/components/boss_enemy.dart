@@ -36,6 +36,8 @@ class BossEnemy extends BlockEnemy {
         case EnemyModType.armored:
           armorMultiplier *= mod.value;
           break;
+        case EnemyModType.gravityWell:
+          break;
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flame/components.dart';
+import '../components/ball.dart';
 
 // Simple Pool Interface
 class PoolManager<T extends Component> {
@@ -28,4 +29,10 @@ class GamePools {
 
   // Example for particles or basic blocks
   // final PoolManager<BlockEnemy> blockPool = PoolManager(() => BlockEnemy(position: Vector2.zero()));
+
+  late final PoolManager<Ball> ballPool;
+
+  void init(Ball Function() ballFactory) {
+    ballPool = PoolManager(ballFactory);
+  }
 }

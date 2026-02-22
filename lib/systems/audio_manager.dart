@@ -23,12 +23,11 @@ class AudioManager {
   double _bgmVolume = 0.5;
   double _seVolume = 0.5;
   bool _bgmEnabled = true;
-  bool _seEnabled = false;
+  bool seEnabled = false;
 
   double get bgmVolume => _bgmVolume;
   double get seVolume => _seVolume;
   bool get bgmEnabled => _bgmEnabled;
-  bool get seEnabled => _seEnabled;
 
   set bgmVolume(double value) {
     _bgmVolume = value.clamp(0.0, 1.0);
@@ -48,10 +47,6 @@ class AudioManager {
     } else {
       stopBgm();
     }
-  }
-
-  set seEnabled(bool value) {
-    _seEnabled = value;
   }
 
   // SE再生のクールダウン（同じSEの連続再生を防ぐ）
@@ -100,7 +95,7 @@ class AudioManager {
 
   void _playFromSource(AudioSource? source, String key,
       {double relativeVolume = 1.0}) {
-    if (!SoLoud.instance.isInitialized || source == null || !_seEnabled) return;
+    if (!SoLoud.instance.isInitialized || source == null || !seEnabled) return;
 
     final now = DateTime.now().millisecondsSinceEpoch;
     final lastPlay = _lastPlayTime[key];

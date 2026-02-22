@@ -4,7 +4,8 @@ import '../breakout_game.dart';
 import 'block.dart';
 import '../data/game_state.dart';
 
-class AfterburnArea extends PositionComponent with HasGameReference<BreakoutGame> {
+class AfterburnArea extends PositionComponent
+    with HasGameReference<BreakoutGame> {
   final double radius;
   final double duration;
   final double damagePerTick;
@@ -18,7 +19,10 @@ class AfterburnArea extends PositionComponent with HasGameReference<BreakoutGame
     this.radius = 50.0,
     this.duration = 3.0,
     this.damagePerTick = 2.0,
-  }) : super(position: position, size: Vector2.all(radius * 2), anchor: Anchor.center);
+  }) : super(
+            position: position,
+            size: Vector2.all(radius * 2),
+            anchor: Anchor.center);
 
   @override
   void update(double dt) {
@@ -51,7 +55,7 @@ class AfterburnArea extends PositionComponent with HasGameReference<BreakoutGame
   @override
   void render(Canvas canvas) {
     final paint = Paint()
-      ..color = Colors.deepOrange.withOpacity(0.3)
+      ..color = Colors.deepOrange.withValues(alpha: 0.3)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(Offset(size.x / 2, size.y / 2), radius, paint);
   }

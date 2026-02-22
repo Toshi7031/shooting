@@ -18,14 +18,17 @@ class BreakoutGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     // Initialize Pools
-    GamePools().init(() => Ball(position: Vector2.zero(), itemData: ItemRepository.defaultBall));
+    GamePools().init(() =>
+        Ball(position: Vector2.zero(), itemData: ItemRepository.defaultBall));
 
     // Add Core
     final core = Core();
     add(core);
 
     // Add initial ball for testing (using size which is now canvas size)
-    add(Ball(position: Vector2(size.x / 2, size.y / 2), itemData: ItemRepository.defaultBall));
+    add(Ball(
+        position: Vector2(size.x / 2, size.y / 2),
+        itemData: ItemRepository.defaultBall));
 
     // Add Systems
     add(SpawnSystem());
@@ -53,14 +56,17 @@ class BreakoutGame extends FlameGame {
     // 全ての敵、ボール、パーティクルを削除
     final toRemove = <Component>[];
     for (final child in children) {
-      if (child is BlockEnemy || child is BossEnemy || child is Core || child is ParticleSystemComponent) {
+      if (child is BlockEnemy ||
+          child is BossEnemy ||
+          child is Core ||
+          child is ParticleSystemComponent) {
         toRemove.add(child);
       }
       // Ball handles its own removal via release if needed, but for hard reset we might just remove?
       // If we remove Ball without release, it's lost to GC.
       // Better to release all balls to pool.
       if (child is Ball) {
-        (child as Ball).release();
+        child.release();
       }
     }
     for (final c in toRemove) {
@@ -71,7 +77,9 @@ class BreakoutGame extends FlameGame {
     add(Core());
 
     // 初期ボールを追加
-    add(Ball(position: Vector2(size.x / 2, size.y / 2), itemData: ItemRepository.defaultBall));
+    add(Ball(
+        position: Vector2(size.x / 2, size.y / 2),
+        itemData: ItemRepository.defaultBall));
   }
 
   @override

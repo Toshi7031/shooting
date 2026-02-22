@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../systems/pool_manager.dart';
 import '../data/game_state.dart';
 import '../data/models/item_data.dart';
-import '../data/repositories/item_repository.dart'; // For default item
 import '../data/models/tags.dart';
 import '../data/models/rarity.dart';
 import 'package:circle_breaker_survivors/breakout_game.dart';
@@ -135,7 +134,9 @@ class Ball extends CircleComponent with HasGameReference<BreakoutGame> {
     hitBlocks.clear();
     _trailIndex = 0;
     _trailCount = 0;
-    for (int i = 0; i < _trailLength; i++) _trail[i] = null;
+    for (int i = 0; i < _trailLength; i++) {
+      _trail[i] = null;
+    }
     isCounted = true;
     _init();
   }
@@ -210,7 +211,8 @@ class Ball extends CircleComponent with HasGameReference<BreakoutGame> {
     // Trailは敵が少ない時のみ描画
     if (GameState().enemiesAlive < 100 && _trailCount > 0) {
       for (int i = 0; i < _trailCount; i++) {
-        final idx = (_trailIndex - _trailCount + i + _trailLength) % _trailLength;
+        final idx =
+            (_trailIndex - _trailCount + i + _trailLength) % _trailLength;
         final trailPos = _trail[idx];
         if (trailPos == null) continue;
 
@@ -231,6 +233,7 @@ class Ball extends CircleComponent with HasGameReference<BreakoutGame> {
       canvas.drawCircle(Offset(size.x / 2, size.y / 2), size.x / 2, _ballPaint);
     }
   }
+
   @override
   void onMount() {
     super.onMount();

@@ -91,7 +91,7 @@ class _SoundSettingsWidgetState extends State<SoundSettingsWidget> {
             Switch(
               value: enabled,
               onChanged: onEnabledChanged,
-              activeColor: Colors.green,
+              activeThumbColor: Colors.green,
               activeTrackColor: Colors.green.withValues(alpha: 0.5),
               inactiveThumbColor: Colors.grey,
               inactiveTrackColor: Colors.grey.withValues(alpha: 0.5),

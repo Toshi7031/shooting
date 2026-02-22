@@ -37,10 +37,10 @@ class Core extends PositionComponent with HasGameReference {
 
     timer += dt;
 
-    // Stolen ModのhasteボーナスをfireIntervalに適用
-    final hasteBonus = state.getStolenModMultiplier('haste');
+    // Stolen ModのfrenzyボーナスをfireIntervalに適用
+    final frenzyBonus = state.getStolenModMultiplier('frenzy');
     double interval =
-        fireInterval / (state.fireIntervalMultiplier * hasteBonus);
+        fireInterval / (state.fireIntervalMultiplier * frenzyBonus);
     if (timer >= interval) {
       timer = 0;
       fire();

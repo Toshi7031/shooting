@@ -30,7 +30,7 @@ class LevelUpMenu extends StatelessWidget {
                 const SizedBox(height: 10),
                 _buildUpgradeOption("Cold Damage +20%", "Cold", 0.2),
                 const SizedBox(height: 10),
-                _buildUpgradeOption("Attack Speed +10%", "AttackSpeed", 0.1),
+                _buildUpgradeOption("Fire Rate +10%", "FireRate", 0.1),
                 const SizedBox(height: 10),
                 _buildUpgradeOption("Pierce +1", "Pierce", 1.0),
                 const SizedBox(height: 10),

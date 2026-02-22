@@ -35,7 +35,8 @@ class ShopMenu extends StatefulWidget {
     }
 
     // ボタンの位置を取得してフローティングテキストを表示
-    final renderBox = buttonKey.currentContext?.findRenderObject() as RenderBox?;
+    final renderBox =
+        buttonKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox != null) {
       final position = renderBox.localToGlobal(Offset.zero);
       FloatingFeedback.show(
@@ -65,7 +66,8 @@ class _ShopMenuState extends State<ShopMenu> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const PixelText("-- BALLS --", fontSize: 14, color: GameColors.textSecondary),
+                const PixelText("-- BALLS --",
+                    fontSize: 14, color: GameColors.textSecondary),
                 Row(
                   children: [
                     _buildMultiplierButton(1),
@@ -78,28 +80,49 @@ class _ShopMenuState extends State<ShopMenu> {
               ],
             ),
             const SizedBox(height: 8),
-            _ShopBallItem(item: ItemRepository.defaultBall, cost: 50, multiplier: _purchaseMultiplier),
-            _ShopBallItem(item: ItemRepository.vampireOrb, cost: 250, multiplier: _purchaseMultiplier),
-            _ShopBallItem(item: ItemRepository.explosiveOrb, cost: 150, multiplier: _purchaseMultiplier),
+            _ShopBallItem(
+                item: ItemRepository.defaultBall,
+                cost: 50,
+                multiplier: _purchaseMultiplier),
+            _ShopBallItem(
+                item: ItemRepository.vampireOrb,
+                cost: 250,
+                multiplier: _purchaseMultiplier),
+            _ShopBallItem(
+                item: ItemRepository.explosiveOrb,
+                cost: 150,
+                multiplier: _purchaseMultiplier),
 
             const SizedBox(height: 16),
             // アーティファクトセクション
             const PixelText("-- ARTIFACTS --",
                 fontSize: 14, color: GameColors.warning),
             const SizedBox(height: 8),
-            _ShopArtifactItem(artifact: ArtifactRepository.headhunter, cost: 500),
-            _ShopArtifactItem(artifact: ArtifactRepository.tabulaRasa, cost: 300),
-            _ShopArtifactItem(artifact: ArtifactRepository.soulEater, cost: 400),
-            _ShopArtifactItem(artifact: ArtifactRepository.berserkersRage, cost: 350),
-            _ShopArtifactItem(artifact: ArtifactRepository.luckyCharm, cost: 300),
+            _ShopArtifactItem(
+                artifact: ArtifactRepository.headhunter, cost: 500),
+            _ShopArtifactItem(
+                artifact: ArtifactRepository.tabulaRasa, cost: 300),
+            _ShopArtifactItem(
+                artifact: ArtifactRepository.soulEater, cost: 400),
+            _ShopArtifactItem(
+                artifact: ArtifactRepository.berserkersRage, cost: 350),
+            _ShopArtifactItem(
+                artifact: ArtifactRepository.luckyCharm, cost: 300),
 
             const SizedBox(height: 16),
             // シンギュラリティ・マージ
-            const PixelText("-- SINGULARITY MERGE --", fontSize: 14, color: GameColors.legendary), // legendary color?
+            const PixelText("-- SINGULARITY MERGE --",
+                fontSize: 14, color: GameColors.legendary), // legendary color?
             const SizedBox(height: 8),
-            _SpecificMergeItem(tier1: ItemRepository.defaultBall, tier2: ItemRepository.juggernautSphere),
-            _SpecificMergeItem(tier1: ItemRepository.vampireOrb, tier2: ItemRepository.bloodMoon),
-            _SpecificMergeItem(tier1: ItemRepository.explosiveOrb, tier2: ItemRepository.supernova),
+            _SpecificMergeItem(
+                tier1: ItemRepository.defaultBall,
+                tier2: ItemRepository.juggernautSphere),
+            _SpecificMergeItem(
+                tier1: ItemRepository.vampireOrb,
+                tier2: ItemRepository.bloodMoon),
+            _SpecificMergeItem(
+                tier1: ItemRepository.explosiveOrb,
+                tier2: ItemRepository.supernova),
 
             const SizedBox(height: 16),
             // ユーティリティ
@@ -111,14 +134,22 @@ class _ShopMenuState extends State<ShopMenu> {
               cost: GameConstants.healCost,
               onBuy: (context, buttonKey) {
                 final state = GameState();
-                if (state.gold >= GameConstants.healCost && state.coreHp < state.maxCoreHp) {
+                if (state.gold >= GameConstants.healCost &&
+                    state.coreHp < state.maxCoreHp) {
                   state.addGold(-GameConstants.healCost);
                   state.healCore(GameConstants.healAmount.toDouble());
-                  ShopMenu._showFeedback(context, buttonKey, "+${GameConstants.healAmount} HP", GameColors.success, true);
+                  ShopMenu._showFeedback(
+                      context,
+                      buttonKey,
+                      "+${GameConstants.healAmount} HP",
+                      GameColors.success,
+                      true);
                 } else if (state.coreHp >= state.maxCoreHp) {
-                  ShopMenu._showFeedback(context, buttonKey, "HP Full!", GameColors.accent, false);
+                  ShopMenu._showFeedback(
+                      context, buttonKey, "HP Full!", GameColors.accent, false);
                 } else {
-                  ShopMenu._showFeedback(context, buttonKey, "Not enough Gold!", GameColors.error, false);
+                  ShopMenu._showFeedback(context, buttonKey, "Not enough Gold!",
+                      GameColors.error, false);
                 }
               },
             ),
@@ -129,12 +160,25 @@ class _ShopMenuState extends State<ShopMenu> {
                 final state = GameState();
                 if (state.gold >= GameConstants.randomUpgradeCost) {
                   state.addGold(-GameConstants.randomUpgradeCost);
-                  final tags = ['Physical', 'Fire', 'Cold'];
-                  final tag = tags[DateTime.now().second % 3];
-                  state.upgradeTag(tag, 0.2);
-                  ShopMenu._showFeedback(context, buttonKey, "$tag +20%!", GameColors.success, true);
+
+                  final upgrades = [
+                    (tag: 'Physical', amount: 0.2, message: 'Physical +20%!'),
+                    (tag: 'Fire', amount: 0.2, message: 'Fire +20%!'),
+                    (tag: 'Cold', amount: 0.2, message: 'Cold +20%!'),
+                    (tag: 'FireRate', amount: 0.1, message: 'Fire Rate +10%!'),
+                    (tag: 'Pierce', amount: 1.0, message: 'Pierce +1!'),
+                    (tag: 'Bounce', amount: 1.0, message: 'Bounce +1!'),
+                  ];
+                  final upgrade =
+                      upgrades[DateTime.now().second % upgrades.length];
+
+                  state.upgradeTag(upgrade.tag, upgrade.amount,
+                      consumePoint: false);
+                  ShopMenu._showFeedback(context, buttonKey, upgrade.message,
+                      GameColors.success, true);
                 } else {
-                  ShopMenu._showFeedback(context, buttonKey, "Not enough Gold!", GameColors.error, false);
+                  ShopMenu._showFeedback(context, buttonKey, "Not enough Gold!",
+                      GameColors.error, false);
                 }
               },
             ),
@@ -200,9 +244,18 @@ class _ShopArtifactItemState extends State<_ShopArtifactItem> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    PixelText(widget.artifact.name, fontSize: 14, color: isOwned ? GameColors.textSecondary : GameColors.warning),
-                    PixelText(widget.artifact.description, fontSize: 10, color: GameColors.textSecondary),
-                    PixelText(isOwned ? "OWNED" : "${widget.cost} G", fontSize: 12, color: isOwned ? GameColors.textSecondary : GameColors.accent),
+                    PixelText(widget.artifact.name,
+                        fontSize: 14,
+                        color: isOwned
+                            ? GameColors.textSecondary
+                            : GameColors.warning),
+                    PixelText(widget.artifact.description,
+                        fontSize: 10, color: GameColors.textSecondary),
+                    PixelText(isOwned ? "OWNED" : "${widget.cost} G",
+                        fontSize: 12,
+                        color: isOwned
+                            ? GameColors.textSecondary
+                            : GameColors.accent),
                   ],
                 ),
               ),
@@ -223,16 +276,19 @@ class _ShopArtifactItemState extends State<_ShopArtifactItem> {
 
   void _onBuy(BuildContext context, GameState state) {
     if (state.gold < widget.cost) {
-      ShopMenu._showFeedback(context, _buttonKey, "Not enough Gold!", GameColors.error, false);
+      ShopMenu._showFeedback(
+          context, _buttonKey, "Not enough Gold!", GameColors.error, false);
       return;
     }
     if (!state.hasEmptyArtifactSlot) {
-      ShopMenu._showFeedback(context, _buttonKey, "No slots!", GameColors.error, false);
+      ShopMenu._showFeedback(
+          context, _buttonKey, "No slots!", GameColors.error, false);
       return;
     }
     state.addGold(-widget.cost);
     state.equipArtifact(widget.artifact);
-    ShopMenu._showFeedback(context, _buttonKey, "Equipped!", GameColors.success, true);
+    ShopMenu._showFeedback(
+        context, _buttonKey, "Equipped!", GameColors.success, true);
   }
 }
 
@@ -273,8 +329,11 @@ class _ShopBallItemState extends State<_ShopBallItem> {
                     fontSize: 10, color: GameColors.textSecondary),
                 Row(
                   children: [
-                    PixelText("${widget.cost} G", fontSize: 12, color: GameColors.accent),
-                    if (widget.multiplier > 1) PixelText(" x ${widget.multiplier} = $totalCost G", fontSize: 12, color: GameColors.accent),
+                    PixelText("${widget.cost} G",
+                        fontSize: 12, color: GameColors.accent),
+                    if (widget.multiplier > 1)
+                      PixelText(" x ${widget.multiplier} = $totalCost G",
+                          fontSize: 12, color: GameColors.accent),
                   ],
                 ),
               ],
@@ -282,7 +341,8 @@ class _ShopBallItemState extends State<_ShopBallItem> {
           ),
           PixelButton(
             key: _buttonKey,
-            label: "BUY${widget.multiplier > 1 ? ' x${widget.multiplier}' : ''}",
+            label:
+                "BUY${widget.multiplier > 1 ? ' x${widget.multiplier}' : ''}",
             onPressed: () => _onBuy(context),
             width: 80,
             height: 30,
@@ -299,9 +359,15 @@ class _ShopBallItemState extends State<_ShopBallItem> {
     if (state.gold >= totalCost) {
       state.addGold(-totalCost);
       state.addBalls(widget.item, widget.multiplier);
-      ShopMenu._showFeedback(context, _buttonKey, "+${widget.multiplier} ${widget.item.name}!", GameColors.success, true);
+      ShopMenu._showFeedback(
+          context,
+          _buttonKey,
+          "+${widget.multiplier} ${widget.item.name}!",
+          GameColors.success,
+          true);
     } else {
-      ShopMenu._showFeedback(context, _buttonKey, "Not enough Gold!", GameColors.error, false);
+      ShopMenu._showFeedback(
+          context, _buttonKey, "Not enough Gold!", GameColors.error, false);
     }
   }
 }
@@ -337,7 +403,8 @@ class _ShopUtilityItemState extends State<_ShopUtilityItem> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 PixelText(widget.name, fontSize: 16),
-                PixelText("${widget.cost} G", fontSize: 12, color: GameColors.accent),
+                PixelText("${widget.cost} G",
+                    fontSize: 12, color: GameColors.accent),
               ],
             ),
           ),
@@ -376,7 +443,8 @@ class _SpecificMergeItemState extends State<_SpecificMergeItem> {
       listenable: GameState(),
       builder: (context, _) {
         final state = GameState();
-        final ownedCount = state.ballLoadout.where((b) => b.name == widget.tier1.name).length;
+        final ownedCount =
+            state.ballLoadout.where((b) => b.name == widget.tier1.name).length;
         final canMerge = ownedCount >= 100;
 
         return Padding(
@@ -388,10 +456,16 @@ class _SpecificMergeItemState extends State<_SpecificMergeItem> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    PixelText(widget.tier2.name, fontSize: 16, color: GameColors.legendary),
-                    PixelText(widget.tier2.description, fontSize: 10, color: GameColors.textSecondary),
-                    PixelText("Cost: 100 ${widget.tier1.name}", fontSize: 10, color: GameColors.textSecondary),
-                    PixelText("$ownedCount / 100", fontSize: 12, color: canMerge ? GameColors.success : GameColors.error),
+                    PixelText(widget.tier2.name,
+                        fontSize: 16, color: GameColors.legendary),
+                    PixelText(widget.tier2.description,
+                        fontSize: 10, color: GameColors.textSecondary),
+                    PixelText("Cost: 100 ${widget.tier1.name}",
+                        fontSize: 10, color: GameColors.textSecondary),
+                    PixelText("$ownedCount / 100",
+                        fontSize: 12,
+                        color:
+                            canMerge ? GameColors.success : GameColors.error),
                   ],
                 ),
               ),
@@ -412,9 +486,11 @@ class _SpecificMergeItemState extends State<_SpecificMergeItem> {
 
   void _onMerge(BuildContext context, GameState state) {
     if (state.requestSpecificMerge(widget.tier1, widget.tier2, 100)) {
-      ShopMenu._showFeedback(context, _buttonKey, "Merge! +${widget.tier2.name}", GameColors.legendary, true);
+      ShopMenu._showFeedback(context, _buttonKey,
+          "Merge! +${widget.tier2.name}", GameColors.legendary, true);
     } else {
-      ShopMenu._showFeedback(context, _buttonKey, "Not enough balls!", GameColors.error, false);
+      ShopMenu._showFeedback(
+          context, _buttonKey, "Not enough balls!", GameColors.error, false);
     }
   }
 }

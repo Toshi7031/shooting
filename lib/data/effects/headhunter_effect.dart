@@ -5,7 +5,7 @@ import '../../components/block.dart';
 import '../models/enemy_mod.dart';
 import 'item_effect.dart';
 
-/// Headhunter効果: Rare敵を倒すとそのModを20秒間盗む
+/// Headhunter効果: Rare敵を倒すとそのModを5秒間盗む
 class HeadhunterEffect extends ItemEffect {
   @override
   bool get isGlobal => true;
@@ -21,8 +21,8 @@ class HeadhunterEffect extends ItemEffect {
 
       switch (mod.type) {
         case EnemyModType.haste:
-          state.addStolenMod('haste', 1.5, duration);
-          debugPrint("  -> Attack Speed +50%");
+          state.addStolenMod('frenzy', 1.5, duration);
+          debugPrint("  -> Fire Rate +50%");
           break;
         case EnemyModType.giant:
           state.addStolenMod('giant', 1.5, duration);

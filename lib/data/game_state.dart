@@ -146,24 +146,26 @@ class GameState extends ChangeNotifier {
 
   // void closeLevelUp() {} // Removed
 
-  void upgradeTag(String tag, double amount) {
-    if (pendingUpgrades <= 0) return;
+  void upgradeTag(String tag, double amount, {bool consumePoint = true}) {
+    if (consumePoint && pendingUpgrades <= 0) return;
 
+    bool applied = false;
     if (tagMultipliers.containsKey(tag)) {
       tagMultipliers[tag] = (tagMultipliers[tag] ?? 1.0) + amount;
-      pendingUpgrades--;
-      notifyListeners();
-    } else if (tag == 'AttackSpeed') {
+      applied = true;
+    } else if (tag == 'FireRate') {
       fireIntervalMultiplier += amount;
-      pendingUpgrades--;
-      notifyListeners();
+      applied = true;
     } else if (tag == 'Pierce') {
       pierceCount += amount.toInt();
-      pendingUpgrades--;
-      notifyListeners();
+      applied = true;
     } else if (tag == 'Bounce') {
       maxBounces += amount.toInt();
-      pendingUpgrades--;
+      applied = true;
+    }
+
+    if (applied) {
+      if (consumePoint) pendingUpgrades--;
       notifyListeners();
     }
   }
@@ -289,9 +291,11 @@ class GameState extends ChangeNotifier {
     return false;
   }
 
-  bool requestSpecificMerge(ItemData requiredTier1, ItemData reward, int count) {
+  bool requestSpecificMerge(
+      ItemData requiredTier1, ItemData reward, int count) {
     // 1. Count specific balls
-    final matchingBalls = ballLoadout.where((b) => b.name == requiredTier1.name).length;
+    final matchingBalls =
+        ballLoadout.where((b) => b.name == requiredTier1.name).length;
 
     if (matchingBalls >= count) {
       // 2. Remove balls
